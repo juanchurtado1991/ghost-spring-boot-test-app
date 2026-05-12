@@ -1,0 +1,26 @@
+# Gradle
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Kotlin
+/lib/
+/bin/
+
+# Spring Boot
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ghost Generated
+build/generated/ksp

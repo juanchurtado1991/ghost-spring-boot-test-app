@@ -1,0 +1,47 @@
+[versions]
+# Kotlin
+kotlin                      = "2.3.21"
+ksp                         = "2.3.6"
+
+# Spring Boot
+spring-boot                  = "3.4.0"
+spring-dependency-management = "1.1.5"
+
+# Ghost Serialization
+ghost = "1.1.15"
+
+# Serialization & I/O
+kotlinx-serialization       = "1.6.3"
+okio                        = "3.9.0"
+
+# Jackson (Spring Boot companion)
+jackson-kotlin              = "2.21.3"
+
+[libraries]
+# Kotlin
+kotlin-reflect              = { group = "org.jetbrains.kotlin", name = "kotlin-reflect" }
+kotlin-test-junit5          = { group = "org.jetbrains.kotlin", name = "kotlin-test-junit5" }
+
+# Spring Boot
+spring-boot-starter-actuator  = { group = "org.springframework.boot", name = "spring-boot-starter-actuator" }
+spring-boot-starter-webflux   = { group = "org.springframework.boot", name = "spring-boot-starter-webflux" }
+spring-boot-devtools          = { group = "org.springframework.boot", name = "spring-boot-devtools" }
+spring-boot-starter-test      = { group = "org.springframework.boot", name = "spring-boot-starter-test" }
+junit-platform-launcher       = { group = "org.junit.platform", name = "junit-platform-launcher" }
+
+# Ghost Serialization
+ghost-spring-boot-starter    = { group = "com.ghostserializer", name = "ghost-spring-boot-starter", version.ref = "ghost" }
+
+# Serialization & I/O
+kotlinx-serialization-json   = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+okio                         = { group = "com.squareup.okio", name = "okio", version.ref = "okio" }
+jackson-module-kotlin        = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson-kotlin" }
+
+[plugins]
+kotlin-jvm                   = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-spring                = { id = "org.jetbrains.kotlin.plugin.spring", version.ref = "kotlin" }
+kotlin-serialization         = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+spring-boot                  = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+ksp                          = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+ghost                        = { id = "com.ghostserializer.ghost", version.ref = "ghost" }

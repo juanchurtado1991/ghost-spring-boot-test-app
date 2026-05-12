@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghost vs Jackson | Real Stats</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --surface: #121217;
+            --accent: #6366f1;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --ghost: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Outfit', sans-serif; 
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Console Side */
+        .console {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border-right: 1px solid #ffffff10;
+        }
+
+        .header { display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-weight: 900; font-size: 1.2rem; opacity: 0.8; }
+        
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .stat-card { background: var(--surface); padding: 1rem; border-radius: 0.5rem; }
+        .stat-card .label { font-size: 0.6rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.2rem; }
+        .stat-card .value { font-size: 1.2rem; font-weight: 900; }
+
+        .chart-box { background: var(--surface); padding: 1rem; border-radius: 0.5rem; flex: 1; min-height: 0; }
+
+        .controls { display: flex; gap: 0.5rem; }
+        .btn { 
+            flex: 1; padding: 1rem; border-radius: 0.5rem; border: none; cursor: pointer; 
+            font-weight: 900; font-size: 0.8rem; text-transform: uppercase; transition: 0.2s;
+        }
+        .btn-ghost { background: var(--accent); color: white; }
+        .btn-jackson { background: #334155; color: white; }
+        .btn-kotlinx { background: #7c3aed; color: white; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+        .btn.loading { position: relative; color: transparent; }
+        .btn.loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin: -8px 0 0 -8px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Monitor Side */
+        .monitor { width: 450px; background: #000; padding: 1.5rem; display: flex; flex-direction: column; }
+        .monitor-header { font-size: 0.7rem; color: var(--text-dim); margin-bottom: 1rem; letter-spacing: 0.1em; }
+        .log-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.3rem; }
+        
+        .log-entry { 
+            font-family: monospace; font-size: 0.75rem; padding: 0.5rem; 
+            background: #ffffff05; border-radius: 0.3rem; border-left: 2px solid var(--accent);
+            animation: fadeIn 0.2s ease-out;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-thumb { background: #ffffff10; }
+    </style>
+</head>
+<body>
+    <div class="console">
+        <div class="header">
+            <h1>SERVER REAL-TIME MONITOR</h1>
+            <div id="engine-status" style="font-size: 0.7rem; color: var(--accent)">READY</div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="label">JVM Heap</div>
+                <div class="value" id="heap-val">0 MB</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Total Alloc</div>
+                <div class="value" id="alloc-val">0 GB</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Threads</div>
+                <div class="value" id="threads-val">0</div>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card" style="border-bottom: 2px solid var(--accent)">
+                <div class="label">Internal Garbage (MB)</div>
+                <div class="value" id="garbage-val">0.0</div>
+            </div>
+            <div class="stat-card" style="border-bottom: 2px solid #ef4444">
+                <div class="label">Latency (ms)</div>
+                <div class="value" id="latency-val">0</div>
+            </div>
+            <div class="stat-card" style="background: #1e293b">
+                <div class="label">Efficiency Score</div>
+                <div class="value" id="efficiency-val">--</div>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <div style="display:flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-dim); margin-bottom: 0.5rem">
+                <span>HEAP MONITOR (Real-time)</span>
+                <span id="ghost-advantage" style="color: #4ade80; font-weight: 900"></span>
+            </div>
+            <canvas id="heapChart"></canvas>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+            <select id="operation-select" style="flex: 1; padding: 0.8rem; background: var(--surface); color: var(--text); border: 1px solid #ffffff10; border-radius: 0.5rem; font-family: inherit; font-weight: bold; outline: none;">
+                <option value="write">WRITE (Serialize)</option>
+                <option value="read">READ (Deserialize)</option>
+            </select>
+            <select id="mode-select" style="flex: 1; padding: 0.8rem; background: var(--surface); color: var(--text); border: 1px solid #ffffff10; border-radius: 0.5rem; font-family: inherit; font-weight: bold; outline: none;">
+                <option value="bytes">ByteArray</option>
+                <option value="string">String</option>
+                <option value="stream">Stream (Okio/Null)</option>
+            </select>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-ghost" onclick="startTest('ghost')">Test Ghost</button>
+            <button class="btn btn-kotlinx" onclick="startTest('kotlinx')">Test Kotlinx</button>
+            <button class="btn btn-jackson" onclick="startTest('jackson')">Test Jackson</button>
+        </div>
+    </div>
+
+    <div class="monitor">
+        <div class="monitor-header">SPECTRAL DATA LOG</div>
+        <div class="log-list" id="log-list"></div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
