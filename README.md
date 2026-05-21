@@ -2,9 +2,7 @@
 
 This is the official testing laboratory for **Ghost Serialization** in Spring Boot environments. It serves as both a performance validation tool and a blueprint for production-grade backend integrations.
 
-**Ghost version:** `1.1.16` from [Maven Central](https://central.sonatype.com/search?q=g:com.ghostserializer).
-
-> **This project is standalone.** Ghost resolves from Maven Central only — no local `ghost-serializer` checkout or `mavenLocal()`.
+**Ghost version:** `1.1.17` from [Maven Central](https://central.sonatype.com/search?q=g:com.ghostserializer) (`com.ghostserializer`). Clone and build — no local checkout of [ghost-serializer](https://github.com/juanchurtado1991/ghost-serializer) required.
 
 **Related projects:**
 
@@ -23,7 +21,7 @@ This is the official testing laboratory for **Ghost Serialization** in Spring Bo
 ### Option A — Web dashboard (recommended for demos)
 
 ```bash
-./gradlew bootRun
+./gradlew bootRun --refresh-dependencies
 ```
 
 Opens **http://localhost:8081**. Use the UI to compare Ghost vs Jackson on the same endpoints.
@@ -40,16 +38,26 @@ python3 benchmark.py
 
 ---
 
-## 📦 Minimal setup (Maven Central)
+## 📦 Minimal setup
 
 > **Coordinates:** Maven artifacts use `com.ghostserializer`. Kotlin packages use `com.ghost.serialization`.
+
+### Ghost artifacts (`1.1.17` on Maven Central)
+
+| Artifact | Purpose |
+|:---|:---|
+| `com.ghostserializer:ghost-api` | Annotations (`@GhostSerialization`, etc.) |
+| `com.ghostserializer:ghost-serialization` | Runtime engine |
+| `com.ghostserializer:ghost-compiler` | KSP code generator |
+| `com.ghostserializer:ghost-spring-boot-starter` | Spring MVC + WebFlux codecs |
+| `com.ghostserializer.ghost` (Gradle plugin) | Auto-wires KSP + dependencies |
 
 ### 1. Gradle plugin + starter
 
 ```toml
 # gradle/libs.versions.toml
 [versions]
-ghost = "1.1.16"
+ghost = "1.1.17"
 
 [libraries]
 ghost-spring-boot-starter = { group = "com.ghostserializer", name = "ghost-spring-boot-starter", version.ref = "ghost" }
@@ -84,6 +92,13 @@ pluginManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
     }
 }
 ```
@@ -165,7 +180,11 @@ Auto-configures **`GhostAutoConfiguration`** when Spring Boot starts:
 
 ## 📊 Benchmark results (10,000 iterations)
 
-> **Methodology:** `benchmark.py`, concurrent workers, 10k `GhostCharacter` per request. Memory: `ThreadMXBean` (request thread only).
+> **Methodology:** `benchmark.py`, 16 concurrent workers, 10k requests per engine/op/mode. **Avg Memory (Waste)** = `ThreadMXBean.getThreadAllocatedBytes()` delta on the request thread (bytes allocated during the call, not heap retained).
+>
+> **Ghost WRITE / ByteArray:** Measures `Ghost.encodeToBytes` (includes `FlatByteArrayWriter` growth + `copyOf` result). With Ghost **1.1.17**, JVM keeps the writer buffer warm up to **8 MB** (`GhostHeuristics.maxWarmWriteBufferCapacity`).
+>
+> Numbers below are from an earlier **1.1.16-era** run; refresh with `python3 benchmark.py` on **1.1.17** after Central resolves.
 
 | Engine | Operation | Mode | Avg latency | Avg memory | Throughput |
 |:---|:---|:---|:---:|:---:|:---:|
@@ -200,12 +219,13 @@ Full docs: [ghost-serializer — Spring Boot](https://github.com/juanchurtado199
 
 ## Troubleshooting
 
-**Plugin `1.1.16` not found:** Wait for Maven Central sync, then:
+**Plugin `1.1.17` not found:** Sonatype can show PUBLISHED before `repo.maven.apache.org` syncs. Verify on Maven:
 
 ```bash
-curl -s https://repo.maven.apache.org/maven2/com/ghostserializer/ghost/com.ghostserializer.ghost.gradle.plugin/maven-metadata.xml | grep 1.1.16
-./gradlew --stop && ./gradlew bootRun --refresh-dependencies
+curl -s https://repo.maven.apache.org/maven2/com/ghostserializer/ghost/com.ghostserializer.ghost.gradle.plugin/maven-metadata.xml | grep 1.1.17
 ```
+
+Then: `./gradlew --stop && ./gradlew bootRun --refresh-dependencies`.
 
 **`Ghost NOT_FOUND` at runtime:** Model missing `@GhostSerialization`, KSP not applied, or `ghost.moduleName` mismatch — rebuild after fixing `ksp { arg("ghost.moduleName", "...") }`.
 
