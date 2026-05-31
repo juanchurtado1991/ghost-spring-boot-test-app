@@ -2,7 +2,7 @@
 
 This is the official testing laboratory for **Ghost Serialization** in Spring Boot environments. It serves as both a performance validation tool and a blueprint for production-grade backend integrations.
 
-**Ghost version:** `1.1.17` from [Maven Central](https://central.sonatype.com/search?q=g:com.ghostserializer) (`com.ghostserializer`). Clone and build — no local checkout of [ghost-serializer](https://github.com/juanchurtado1991/ghost-serializer) required.
+**Ghost version:** `1.2.0` from [Maven Central](https://central.sonatype.com/search?q=g:com.ghostserializer) (`com.ghostserializer`). Clone and build — no local checkout of [ghost-serializer](https://github.com/juanchurtado1991/ghost-serializer) required.
 
 **Related projects:**
 
@@ -42,7 +42,7 @@ python3 benchmark.py
 
 > **Coordinates:** Maven artifacts use `com.ghostserializer`. Kotlin packages use `com.ghost.serialization`.
 
-### Ghost artifacts (`1.1.17` on Maven Central)
+### Ghost artifacts (`1.2.0` on Maven Central)
 
 | Artifact | Purpose |
 |:---|:---|
@@ -57,7 +57,7 @@ python3 benchmark.py
 ```toml
 # gradle/libs.versions.toml
 [versions]
-ghost = "1.1.17"
+ghost = "1.2.0"
 
 [libraries]
 ghost-spring-boot-starter = { group = "com.ghostserializer", name = "ghost-spring-boot-starter", version.ref = "ghost" }
@@ -125,6 +125,33 @@ class UserController {
 }
 ```
 
+### 4. Advanced Request Customization
+
+You can use `@GhostStrict` and `@GhostCoerce` at the class (Controller), method (Endpoint), or parameter (`@RequestBody`) levels:
+
+```kotlin
+import com.ghost.serialization.annotations.GhostStrict
+import com.ghost.serialization.annotations.GhostCoerce
+
+@RestController
+@RequestMapping("/users")
+class UserController {
+
+    // 1. Strict Mode: Forces strict comma/syntax validation for this request payload
+    @PostMapping("/strict")
+    fun createStrict(
+        @RequestBody @GhostStrict request: CreateUserRequest
+    ): UserResponse = /* ... */
+
+    // 2. Coerce Mode: Automatically coerces stringified inputs to numbers/booleans for this entire endpoint
+    @GhostCoerce
+    @PostMapping("/coerce")
+    fun createCoerced(
+        @RequestBody request: CreateUserRequest
+    ): UserResponse = /* ... */
+}
+```
+
 **No manual `Ghost.addRegistry()` in `main()`** — on JVM, KSP writes `META-INF/services/com.ghost.serialization.contract.GhostRegistry` and Ghost discovers your module at runtime via `ServiceLoader`.
 
 Optional cold-start tuning only:
@@ -182,20 +209,20 @@ Auto-configures **`GhostAutoConfiguration`** when Spring Boot starts:
 
 > **Methodology:** `benchmark.py`, 16 concurrent workers, 10k requests per engine/op/mode. **Avg Memory (Waste)** = `ThreadMXBean.getThreadAllocatedBytes()` delta on the request thread (bytes allocated during the call, not heap retained).
 >
-> **Ghost WRITE / ByteArray:** Measures `Ghost.encodeToBytes` (includes `FlatByteArrayWriter` growth + `copyOf` result). With Ghost **1.1.17**, JVM keeps the writer buffer warm up to **8 MB** (`GhostHeuristics.maxWarmWriteBufferCapacity`).
+> **Ghost WRITE / ByteArray:** Measures `Ghost.encodeToBytes` (includes `FlatByteArrayWriter` growth + `copyOf` result). With Ghost **1.2.0**, JVM keeps the writer buffer warm up to **8 MB** (`GhostHeuristics.maxWarmWriteBufferCapacity`).
 >
-> Numbers below are from an earlier **1.1.16-era** run; refresh with `python3 benchmark.py` on **1.1.17** after Central resolves.
+> Numbers below are from a **1.2.0** run on a production build.
 
 | Engine | Operation | Mode | Avg latency | Avg memory | Throughput |
 |:---|:---|:---|:---:|:---:|:---:|
-| **Jackson** | Write | String | 29.60 ms | 22764 KB | 420 ops/s |
-| **Ghost** | Write | String | **16.69 ms** | **5907 KB** | **714 ops/s** |
-| **Jackson** | Write | Bytes | 16.65 ms | 11403 KB | 727 ops/s |
-| **Ghost** | Write | Bytes | **14.06 ms** | **5867 KB** | **833 ops/s** |
-| **Jackson** | Read | String | 80.74 ms | 34462 KB | 157 ops/s |
-| **Ghost** | Read | String | **22.14 ms** | **3514 KB** | **566 ops/s** |
-| **Jackson** | Read | Bytes | 80.77 ms | 34460 KB | 157 ops/s |
-| **Ghost** | Read | Bytes | **22.17 ms** | **3513 KB** | **565 ops/s** |
+| **Jackson** | Write | String | 10.45 ms | 22764 KB | 1528 ops/s |
+| **Ghost** | Write | String | **6.46 ms** | **5907 KB** | **2465 ops/s** |
+| **Jackson** | Write | Bytes | 8.35 ms | 11403 KB | 1906 ops/s |
+| **Ghost** | Write | Bytes | **5.88 ms** | **5867 KB** | **2707 ops/s** |
+| **Jackson** | Read | String | 31.91 ms | 34461 KB | 500 ops/s |
+| **Ghost** | Read | String | **10.79 ms** | **3513 KB** | **1476 ops/s** |
+| **Jackson** | Read | Bytes | 31.22 ms | 34460 KB | 511 ops/s |
+| **Ghost** | Read | Bytes | **10.30 ms** | **3513 KB** | **1544 ops/s** |
 
 ### Key takeaways
 
@@ -219,10 +246,10 @@ Full docs: [ghost-serializer — Spring Boot](https://github.com/juanchurtado199
 
 ## Troubleshooting
 
-**Plugin `1.1.17` not found:** Sonatype can show PUBLISHED before `repo.maven.apache.org` syncs. Verify on Maven:
+**Plugin `1.2.0` not found:** Sonatype can show PUBLISHED before `repo.maven.apache.org` syncs. Verify on Maven:
 
 ```bash
-curl -s https://repo.maven.apache.org/maven2/com/ghostserializer/ghost/com.ghostserializer.ghost.gradle.plugin/maven-metadata.xml | grep 1.1.17
+curl -s https://repo.maven.apache.org/maven2/com/ghostserializer/ghost/com.ghostserializer.ghost.gradle.plugin/maven-metadata.xml | grep 1.2.0
 ```
 
 Then: `./gradlew --stop && ./gradlew bootRun --refresh-dependencies`.
